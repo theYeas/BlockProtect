@@ -1,0 +1,23 @@
+
+
+Mod Base: http://hey0.net/get.php?dl=serverbeta
+To upgrade the actual server: delete minecraft_server.jar and run the mod jar
+
+
+Mod Javadoc: http://hey0.net/javadoc/package-summary.html
+
+Plan:
+1. Write Preferences Code
+::Preferences - 
+:::SQLServer=127.0.0.1
+:::SQLUsername=username
+:::SQLPassword=password
+:::SQLDBName=BlockProtect
+:::NewestWinsTies=true
+:::ProtectedWarning=false
+:::ProtectTool=269
+:::DetectTool=268
+2. Write Block Selection Code
+3. Write SQL Insert Code
+4. Write SQL Lookup Code
+5. Add Group Support
