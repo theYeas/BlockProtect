@@ -9,10 +9,7 @@ Mod Javadoc: http://hey0.net/javadoc/package-summary.html
 Plan:
 1. Write Preferences Code
 ::Preferences - 
-:::SQLServer=127.0.0.1
-:::SQLUsername=username
-:::SQLPassword=password
-:::SQLDBName=BlockProtect
+:::SQLTablePrefix=bp_
 :::NewestWinsTies=true
 :::ProtectedWarning=false
 :::ProtectTool=269

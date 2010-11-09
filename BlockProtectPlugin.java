@@ -129,8 +129,14 @@ public class BlockProtectPlugin extends Plugin {
 	}
 	
 	public boolean allowPlayer(int areaId, String playerName) {
+		try {
+			Statement st = conn.createStatement();
 		//on error return false
 		//insert into bp_player (bp_area_id, name) values (areaId, "playerName") ON DUPLICATE IGNORE;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
 		return true;
 	}
 	
@@ -202,6 +208,7 @@ public class BlockProtectPlugin extends Plugin {
 			PropertiesFile props = new PropertiesFile(propPath);
 			try {
 				//write defaults
+				props.getString("sqlTablePrefix", sqlTablePrefix);
 				props.setString("protectToolName", "Wooden Shovel");
 				props.setInt("protectToolId", 168);
 				props.setString("detectToolName", "Wooden Sword");
@@ -224,6 +231,7 @@ public class BlockProtectPlugin extends Plugin {
 			try {
 				//read file		
 				props.load();
+				sqlTablePrefix = props.getString("sqlTablePrefix");
 				protectToolName = props.getString("protectToolName");
 				protectToolId = props.getInt("protectToolId");
 				detectToolName = props.getString("detectToolName");
