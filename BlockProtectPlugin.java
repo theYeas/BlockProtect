@@ -1,26 +1,47 @@
 import java.util.logging.Logger;
-
+import java.sql.*;
+import java.io.File;
 /**
 *
 * @author theYeas
 */
 public class BlockProtectPlugin extends Plugin {
+
+	private class BPTempArea {
+		public String name;
+		public String owner;
+		public int x1;
+		public int y1;
+		public int z1;
+		
+		public BPTempArea(String name, String owner) {
+			this.name = name;
+			this.owner = owner;
+			x1 = 0;
+			y1 = 0;
+			z1 = 0;
+		}
+	}
 	private Listener l = new Listener(this);
 	protected static final Logger log = Logger.getLogger("Minecraft");
 	private String name = "BlockProtect";
 	private String version = "0.1";
-	public String protectToolName = "";
+	public String protectToolName = "Wooden Shovel";
 	public int protectToolId = 168;
-	public String detectToolName = "Wooden Shovel";
+	public String detectToolName = "Wooden Sword";
 	public int detectToolId = 169;
-	public String unprotectAdminGroup = "Wooden Sword";
 	public String allowAdminGroup = "";
 	public String unallowAdminGroup = "";
 	public String listAdminGroup = "";
 	public String ownerAdminGroup = "";
 	public String unprotectAdminGroup = "";
 	public String ignoreAdminGroup = "";
+	public String sqlTablePrefix = "bp_";
+	private _srvpropsChecked = false;
+	private _configFolder = "";
+	private Connection conn;
 	
+	priavte HashMap<String, BPTempArea> protecting = null;
 	
 	public void enable() {
 		log.info(name + " " + version + " Plugin Enabled.");
@@ -37,12 +58,56 @@ public class BlockProtectPlugin extends Plugin {
 	}
 
 	public void initialize() {
+		CheckServerConfig();
+		loadProperties();
+		protecting = new HashMap<String, BPTempArea>();
 		BlockProtectListener l = new BlockProtectListener();
 		etc.getLoader().addListener(PluginLoader.Hook.CHAT, l, this, PluginListener.Priority.HIGH);
 		etc.getLoader().addListener( PluginLoader.Hook.BLOCK_CREATED, l, this, PluginListener.Priority.HIGH);
 		etc.getLoader().addListener( PluginLoader.Hook.BLOCK_DESTROYED, l, this, PluginListener.Priority.HIGH);
+		conn = etc.getSQLConnection();
 		log.info(name + " " + version + " initialized");
 	}
+	
+	/**
+     * I don't know about you, but I don't like having so many config
+     * config files in the bin folder, so I decided to throw this in
+     * in case you want to place this plugin's config somewhere else.
+	 * ---juntalis
+     */
+    private void CheckServerConfig() {
+        if(_srvpropsChecked) return;
+
+        PropertiesFile properties = new PropertiesFile("server.properties");
+        properties.load();
+        try {
+            if(properties.keyExists("pluginconfig"))
+                _configFolder = properties.getString("pluginconfig");
+            _srvpropsChecked = true;
+        } catch(Exception e) {
+            log.log(Level.SEVERE, "Exception while reading from server.properties", e);
+        }
+        properties = null;
+
+        // Next, check to make sure we don't have to create aforementioned
+        if(_configFolder != null) {
+            File dirCheck = new File(System.getProperty("user.dir") + File.separator + _configFolder);
+            if(!dirCheck.exists()) {
+                if(!dirCheck.mkdir()) {
+                    log.log(Level.SEVERE, "Could not create plugin configuration folder. Defaulting to root folder.");
+                    _configFolder = "";
+                } else {
+                    log.info("Plugin configuration folder successfully created.");
+                }
+            } else {
+                if(!dirCheck.isDirectory()) {
+                    log.log(Level.SEVERE, "File exists with the name of specified pluginconfig. Defaulting to root folder.");
+                    _configFolder = "";
+                }
+            }
+            dirCheck = null;
+        }
+    }
 	
 	public boolean canModify(String playerName, Block b) {
 		return canModify(playerName, b.getX(), b.getY(), b.getZ());
@@ -129,25 +194,48 @@ public class BlockProtectPlugin extends Plugin {
 	}
 	
 	private void loadProperties() {
-		File f = new File(this.name+".properties");
+		String propPath = _configFolder + this.name + ".properties";
+		File f = new File(propPath);
 		if (!f.exists()) {
 			//make properties
-			log.info(name + ": Writing Blank Properties File");
-			PropertiesFile props = new PropertiesFile(this.name + ".properties");
+			log.info(this.name + ": Writing Blank Properties File");
+			PropertiesFile props = new PropertiesFile(propPath);
 			try {
 				//write defaults
+				props.setString("protectToolName", "Wooden Shovel");
+				props.setInt("protectToolId", 168);
+				props.setString("detectToolName", "Wooden Sword");
+				props.setInt("detectToolId", 169);
+				props.setString("allowAdminGroup", "");
+				props.setString("unallowAdminGroup", "");
+				props.setString("listAdminGroup", "");
+				props.setString("ownerAdminGroup", "");
+				props.setString("unprotectAdminGroup", "");
+				props.setString("ignoreAdminGroup", "");	
+				props.save();
 			} catch (Exception e) {
-				log.log(Level.SEVERE, "Exception while reading from server.properties", e);
+				log.log(Level.SEVERE, "Exception while writing to "+propPath, e);
 			}
 			props.save();
 			//save to file
 		} else {
 			//load properties
-			PropertiesFile props = new PropertiesFile(this.name + ".properties");
+			PropertiesFile props = new PropertiesFile(propPath);
 			try {
-				//read file
+				//read file		
+				props.load();
+				protectToolName = props.getString("protectToolName");
+				protectToolId = props.getInt("protectToolId");
+				detectToolName = props.getString("detectToolName");
+				detectToolId = props.getInt("detectToolId");
+				allowAdminGroup = props.getString("allowAdminGroup");
+				unallowAdminGroup = props.getString("unallowAdminGroup");
+				listAdminGroup = props.getString("listAdminGroup");
+				ownerAdminGroup = props.getString("ownerAdminGroup");
+				unprotectAdminGroup = props.getString("unprotectAdminGroup");
+				ignoreAdminGroup = props.getString("ignoreAdminGroup");
 			} catch (Exception e) {
-				log.log(Level.SEVERE, "Exception while reading from server.properties", e);
+				log.log(Level.SEVERE, "Exception while reading from "+propPath, e);
 			}
 			props.load();
 		}
@@ -180,9 +268,10 @@ public class BlockProtectPlugin extends Plugin {
 					String areaName = split[1];
 					id = getAreaId(areaName, playerName);
 					if (id == -1) {
-						//drop from bp_protecting WHERE owner = playerName
-						//insert into bp_protecting (name, owner) values (areaName, playerName)
-						player.sendMessage(Colors.Rose + "Choose coordinates using "+toolName+".");
+						protecting.remove(playerName);
+						BPTempArea t = new BPTempArea(areaName, playerName);
+						protecting.put(playerName, t);
+						player.sendMessage(Colors.Rose + "Choose coordinates by right clicking blocks with a "+toolName+".");
 					} else {
 						player.sendMessage(Colors.Rose + "Area name already exisits.");
 					}
@@ -289,20 +378,73 @@ public class BlockProtectPlugin extends Plugin {
 				return true;
 			}
 			if (split[0].equalsIgnoreCase("/listareas")) {
-			
+				String ownerName = player.getName();
+				if (split.length == 2 && (player.isAdmin() || (listAdminGroup.length > 0 && player.isInGroup(listAdminGroup)) && etc.getServer().matchName(split[1]) != null)
+					ownerName = split[1];
+				//select owner, name from bp_area where owner = ownerName
+				//for each
+					//player.sendMessage(Colors.Rose +"");
+				//else
+					//player.sendMessage(Colors.Rose +"Player does not have any protected areas.");
+				return true;
 			}
 			if (split[0].equalsIgnoreCase("/giveownership")) {
-			
+				//"/giveownership" , " [areaName] [newOwnerName] <ownerName> - optional ownerName if allowed to administrate. Gives ownership of area to new owner.
+				String ownerName = player.getName();
+				String areaName = "";
+				String newOwner = "";
+				if (split.length >= 3) {
+					areaName = split[1];
+					if (etc.getServer().matchName(split[2])) {
+						newOwner = split[2];
+					} else {
+						player.sendMessage(Colors.Rose+"New owner cannot be found.");
+					}
+					if (split.length == 2 && (player.isAdmin() || (listAdminGroup.length > 0 && player.isInGroup(listAdminGroup)) && etc.getServer().matchName(split[3]) != null)
+						ownerName = split[3];
+					int id = getAreaId(areaName, ownerName);
+					if (id == -1) {
+						player.sendMessage(Colors.Rose+"Cannot find area.");
+					} else {
+						giveOwnership(id, newOwner);
+					}
+				} else {
+					player.sendMessage(Colors.Rose+"Usage: /giveownership [areaName] [newOwnerName] <ownerName> - Gives ownership of area to a new owner. <ownerName> is for admin purposes.");
+				}
+				return true;
 			}
 			return false;
 		}
 
 		public boolean onBlockCreate(Player player, Block blockPlaced, Block blockClicked, int itemInHand) {	
-			return canModify(player.getName(), blockPlaced);
+			if (itemInHand==protectToolId && player.canUseCommand("/protect") && protecting.contains(player.getName())) {
+				BPTempArea t = protecting.get(player.getName());
+				if (t.x1 + t.y1 + t.z1 >= 0) {
+					t.x1 = blockClicked.getX();
+					t.y1 = blockClicked.getY();
+					t.z1 = blockClicked.getZ();
+					player.sendMessage(Colors.Rose+"First coordinate selected.");
+				} else {
+					protect(t.name, t.owner, t.x1, t.y1, t.z1, blockClicked.getX(), blockClicked.getY(), blockClicked.getZ());
+					player.sendMessage(Colors.Rose+"Second coordinate selected, now protecting area.");
+					protecting.remove(player.getName());
+				}
+				return true;
+			} else if (itemInHand==detectToolId) {
+				//SELECT owner, name FROM bp_area INNER JOIN bp_protected on bp_area.id = bp_protected.bp_area_id ORDER BY priority DESC, area.id DESC
+				//for each row found
+					//player.sendMessage(Colors.Rose+"");
+				//else
+					//player.sendMessage(Colors.Rose+"There are not any protected areas here.");
+				return true;
+			} else if ( (itemInHand>267 && itemInHand<280) || itemInHand==256 || itemInHand==257 || itemInHand==258 || itemInHand==290 || itemInHand==291|| itemInHand==292|| itemInHand==293 || itemInHand==294 ) {
+				return false;
+			}
+			return !(player.isInGroup(ignoreAdminGroup) || canModify(player.getName(), blockPlaced));
 		}
 		
 		public boolean onBlockDestroy(Player player, Block block) {
-			return canModify(player.getName(), block);
+			return !(player.isInGroup(ignoreAdminGroup) || canModify(player.getName(), block));
 		}
 	}
 }
