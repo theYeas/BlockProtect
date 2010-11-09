@@ -1,3 +1,3 @@
-public class BPAreaFile extends BPArea {
+public class BPAreaFile extends BPAreaBase implements BPArea {
 
 }
