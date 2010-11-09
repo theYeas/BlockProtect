@@ -6,22 +6,6 @@ import java.io.File;
 * @author theYeas
 */
 public class BlockProtectPlugin extends Plugin {
-
-	private class BPTempArea {
-		public String name;
-		public String owner;
-		public int x1;
-		public int y1;
-		public int z1;
-		
-		public BPTempArea(String name, String owner) {
-			this.name = name;
-			this.owner = owner;
-			x1 = 0;
-			y1 = 0;
-			z1 = 0;
-		}
-	}
 	private Listener l = new Listener(this);
 	protected static final Logger log = Logger.getLogger("Minecraft");
 	private String name = "BlockProtect";
@@ -39,9 +23,9 @@ public class BlockProtectPlugin extends Plugin {
 	public String sqlTablePrefix = "bp_";
 	private _srvpropsChecked = false;
 	private _configFolder = "";
-	private Connection conn;
+	public static Connection conn;
 	
-	priavte HashMap<String, BPTempArea> protecting = null;
+	priavte HashMap<String, BPArea> protecting = null;
 	
 	public void enable() {
 		log.info(name + " " + version + " Plugin Enabled.");
@@ -109,94 +93,35 @@ public class BlockProtectPlugin extends Plugin {
         }
     }
 	
-	public boolean canModify(String playerName, Block b) {
-		return canModify(playerName, b.getX(), b.getY(), b.getZ());
+	public boolean canModify(Player p, Block b) {
+		return canModify(p, b.getX(), b.getY(), b.getZ());
 	}
 	
-	public boolean canModify(String playerName, int x, int y, int z) {
-		//get most prevelant area
-		//if owner is playerName
-			// return true
-		//else
-			//get groups and players allowed
-			//if player is in list of players
-				//return true
-			//else
-				//get player and check groups
-				//if in group
-					//return true
-		return false;
-	}
-	
-	public boolean allowPlayer(int areaId, String playerName) {
-		try {
-			Statement st = conn.createStatement();
-		//on error return false
-		//insert into bp_player (bp_area_id, name) values (areaId, "playerName") ON DUPLICATE IGNORE;
-		} catch (Exception e) {
-			e.printStackTrace();
-			return false;
-		}
-		return true;
-	}
-	
-	public boolean disallowPlayer(int areaId, String playerName) {
-		//on error return false
-		//DROP FROM bp_player WHERE bp_area_id = areaId AND name = "playerName";
-		return true;
-	}
-	
-	public boolean allowGroup(int areaId, String groupName) {
-		//on error return false
-		//insert into bp_group (bp_area_id, group_id) values (areaId, "playerName") ON DUPLICATE IGNORE;
-		return true;
-	}
-	
-	public boolean disallowGroup(int areaId, String groupName) {
-		//on error return false
-		//DROP FROM bp_group WHERE bp_area_id = areaId AND name = "groupName";
-		return true;
-	}
-	
-	public boolean protect(String areaName, String ownerName, Block start, Block end) {
-		//on error return false
-		if (canProtectArea(ownerName, start, end) {
-			//insert into bp_area (owner, name, x1, x2, y1, y2, z1, z2) VALUES ("ownerName", "areaName", start.getX(), start.getY(), start.getZ(), end.getX(), end.getY(), end.getZ())
-			//insert the f'ing mother load of points that are protected into bp_protected (x,y,z,bp_area_id)
-			return true
+	public boolean canModify(Player p, int x, int y, int z) {
+		BPArea area = BPArea.getLeading(x,y,z);
+		if (area.isOwner(p.getName())) {
+			return true;
+		} else {
+			if (area.playerAllowed(p.getName())) {
+				return true;
+			} else {
+				ArrayList<String> allowedGroups = area.groupsAllowed();
+				for(String s : allowedGroups) {
+					if (p.isInGroup(s))
+						return true;
+				}
+			}
 		}
 		return false;
 	}
 	
-	public boolean canProtectArea(String ownerName, Block start, Block end) {
-		//on error return false
+	public boolean canProtectArea(BPArea area) {
 		boolean flag = true;
-		//select highest rated intersecting areas that dont intersect with eachother...
+		
 			//foreach area
 				//check if user is the owner
 					// !flag if ever false
 		return flag;
-	}
-	
-	public int getAreaId(String areaName, String ownerName) {
-		int id = -1;
-		//select id from bp_area where name = "areaName" and owner = "ownerName" LIMIT 1
-		//if count > 0
-			//id = ^^
-		return id;
-	}
-	
-	public boolean unprotect(int areaId) {
-		//on error return false
-		//drop from bp_area where id = areaId
-		//drop from bp_protected where bp_area_id = affected_row()
-		return true;
-	}
-	
-	public boolean giveOwnership(int areaId, String newOwnerName) {
-		//on error return false
-		//update bp_area SET (owner = "newOwnerName") where id = areaId
-		return true;
 	}
 	
 	private void loadProperties() {
@@ -446,10 +371,8 @@ public class BlockProtectPlugin extends Plugin {
 		public boolean onBlockCreate(Player player, Block blockPlaced, Block blockClicked, int itemInHand) {	
 			if (itemInHand==protectToolId && player.canUseCommand("/protect") && protecting.contains(player.getName())) {
 				BPTempArea t = protecting.get(player.getName());
-				if (t.x1 + t.y1 + t.z1 >= 0) {
-					t.x1 = blockClicked.getX();
-					t.y1 = blockClicked.getY();
-					t.z1 = blockClicked.getZ();
+				if (t.lower == null) {
+					t.lower = new Point3d(blockClicked.getX(), blockClicked.getY(), blockClicked.getZ());
 					player.sendMessage(Colors.Rose+"First coordinate selected.");
 				} else {
 					if (protect(t.name, t.owner, t.x1, t.y1, t.z1, blockClicked.getX(), blockClicked.getY(), blockClicked.getZ()) {
