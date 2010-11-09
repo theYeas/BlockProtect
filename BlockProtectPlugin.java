@@ -292,17 +292,16 @@ public class BlockProtectPlugin extends Plugin {
 					}
 				}
 				return true;
-			}
+			}/////below here has been updated to use BPio
 			if (split[0].equalsIgnoreCase("/unallow")) {
-			int id = -1;
+				BPArea area;
 				String groupName = "";
 				String playerName = "";
 				if (split.length >= 4) { 
 					String ownerName = player.getName();
 					String areaName = split[1];
 					if (split[2].equalsIgnoreCase("-g")) {
-						//verify group and get group_id
-						if () {
+						if (true) {//verify group
 							groupName = split[3];
 						} else {
 							player.sendMessage(Colors.Rose + "Invalid Group.");
@@ -316,27 +315,27 @@ public class BlockProtectPlugin extends Plugin {
 					}
 					if (split.length == 5 && (player.isAdmin() || (unprotectAdminGroup.length > 0 && player.isInGroup(unprotectAdminGroup)) && etc.getServer().matchName(split[4]) != null)
 						ownerName = split[4];
-					id = getAreaId(areaName, ownerName);
+					area = io.get(areaName, ownerName);
 				} else {
 					player.sendMessage(Colors.Rose + "Usage: /unallow [areaName] -[p|g] [playerName|groupName] <ownerName> Allows a user or group to modify an area.");
 				}
-				if (id == -1) {
+				if (area == null) {
 					player.sendMessage(Colors.Rose + "Invalid Area.");
-				} else if (id > -1 && group.length > 0) {
-					if (unallowGroup(id, groupName)) {
+				} else if (area != null && group.length > 0) {
+					if (io.unallowGroup(area, groupName)) {
 						player.sendMessage(Colors.Rose + "Group unallowed.");
 					} else {
 						player.sendMessage(Colors.Rose + "Error unallowing group.");
 					}
-				} else if (id > -1 && playerName.length > 0) {
-					if (unallowPlayer(id, playerName)) {
+				} else if (area != null && playerName.length > 0) {
+					if (io.unallowPlayer(area, playerName)) {
 						player.sendMessage(Colors.Rose + "Player unallowed.");
 					} else {
 						player.sendMessage(Colors.Rose + "Error unallowing player.");
 					}
 				}
 				return true;
-			}/////below here has been updated to use BPio
+			}
 			if (split[0].equalsIgnoreCase("/listareas")) {
 				String ownerName = player.getName();
 				if (split.length == 2 && (player.isAdmin() || (listAdminGroup.length > 0 && player.isInGroup(listAdminGroup)) && etc.getServer().matchName(split[1]) != null)
@@ -363,13 +362,12 @@ public class BlockProtectPlugin extends Plugin {
 					}
 					if (split.length == 2 && (player.isAdmin() || (listAdminGroup.length > 0 && player.isInGroup(listAdminGroup)) && etc.getServer().matchName(split[3]) != null)
 						ownerName = split[3];
-					int id = io.exists(areaName, ownerName);
-					if (id == -1) {
+					BPArea area = io.get(areaName, ownerName);
+					if (area == null) {
 						player.sendMessage(Colors.Rose+"Cannot find area.");
 					} else {
-						BPArea area = io.get(id);
 						area.setOwner(newOwner);
-						if (io.save()) {
+						if (io.save(area)) {
 							player.sendMessage(Colors.Rose+"Ownership transfered.");
 						} else {
 							player.sendMessage(Colors.Rose+"Error transfering ownership.");
@@ -402,7 +400,7 @@ public class BlockProtectPlugin extends Plugin {
 			} else if (itemInHand==detectToolId) {
 				ArrayList<BPArea> areas = io.getAll(blockClicked.getX(), blockClicked.getY(), blockClicked.getZ());
 				for(BPArea a : areas) {
-					player.sendMessage(Colors.Rose+a.getName() + " " + a.getOwner());
+					player.sendMessage(Colors.Rose+a.getName() + " - " + a.getOwner());
 				}
 				if (areas.size() == 0)
 					player.sendMessage(Colors.Rose+"There are not any protected areas here.");

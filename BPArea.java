@@ -1,14 +1,19 @@
 public class BPArea {
-	public String name = "";
-	public String owner = "";
-	public BoundingBox b = null;
-	public int priority = 0;
+	private int id = -1;
+	private String name = "";
+	private String owner = "";
+	private BoundingBox b = null;
+	private int priority = 0;
 	
 	public BPArea(String name, String owner) {
 		this.name = name;
 		this.owner = owner;
 	}
-	
+	public BPArea(String name, String owner, int id, int p, Point3d start, Point3d end) {
+		this.id = id;
+		this.p = p;
+		b = new BoundingBox(start,end);
+	}
 	public boolean isStarted() {
 		return b != null;
 	}
@@ -35,6 +40,9 @@ public class BPArea {
 	public int getPriority() {
 		return this.priority;
 	}
+	public int getId() {
+		return this.id;
+	}
 	public void setOwner(String owner) {
 		this.owner = owner;
 	}
@@ -45,7 +53,11 @@ public class BPArea {
 		setStart(new Point3d(x,y,z));
 	}
 	public void setStart(Point3d start) {
-		this.b.setLower(start);
+		if (this.b == null) {
+			this.b = new BoundingBox(start, new Point3d(0,0,0));
+		} else {
+			this.b.setLower(start);
+		}
 	}
 	public void setEnd(int x, int y, int z) {
 		setEnd(new Point3d(x,y,z));
