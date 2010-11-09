@@ -21,6 +21,8 @@ public class BlockProtectPlugin extends Plugin {
 	public String unprotectAdminGroup = "";
 	public String ignoreAdminGroup = "";
 	public String sqlTablePrefix = "bp_";
+	public String dataFolder = "/bp";
+	public boolean useSQL = true;
 	private _srvpropsChecked = false;
 	private _configFolder = "";
 	BPio io = null;
@@ -44,6 +46,11 @@ public class BlockProtectPlugin extends Plugin {
 	public void initialize() {
 		CheckServerConfig();
 		loadProperties();
+		if (useSQL) {
+			io = new BPsql(sqlTablePrefix);
+		} else {
+			io = new BPfile(dataFolder);
+		}
 		protecting = new HashMap<String, BPTempArea>();
 		BlockProtectListener l = new BlockProtectListener();
 		etc.getLoader().addListener(PluginLoader.Hook.CHAT, l, this, PluginListener.Priority.HIGH);
@@ -133,7 +140,8 @@ public class BlockProtectPlugin extends Plugin {
 			PropertiesFile props = new PropertiesFile(propPath);
 			try {
 				//write defaults
-				props.getString("sqlTablePrefix", sqlTablePrefix);
+				props.getString("sqlTablePrefix", "bp_");
+				props.getString("dataFolder", "/bp");
 				props.setString("protectToolName", "Wooden Shovel");
 				props.setInt("protectToolId", 168);
 				props.setString("detectToolName", "Wooden Sword");
@@ -143,7 +151,8 @@ public class BlockProtectPlugin extends Plugin {
 				props.setString("listAdminGroup", "");
 				props.setString("ownerAdminGroup", "");
 				props.setString("unprotectAdminGroup", "");
-				props.setString("ignoreAdminGroup", "");	
+				props.setString("ignoreAdminGroup", "");
+				props.setBoolean("useSQL", true);
 				props.save();
 			} catch (Exception e) {
 				log.log(Level.SEVERE, "Exception while writing to "+propPath, e);
@@ -157,6 +166,7 @@ public class BlockProtectPlugin extends Plugin {
 				//read file		
 				props.load();
 				sqlTablePrefix = props.getString("sqlTablePrefix");
+				dataFolder = props.getString("dataFolder");
 				protectToolName = props.getString("protectToolName");
 				protectToolId = props.getInt("protectToolId");
 				detectToolName = props.getString("detectToolName");
@@ -167,6 +177,7 @@ public class BlockProtectPlugin extends Plugin {
 				ownerAdminGroup = props.getString("ownerAdminGroup");
 				unprotectAdminGroup = props.getString("unprotectAdminGroup");
 				ignoreAdminGroup = props.getString("ignoreAdminGroup");
+				useSQL = props.getBoolean("useSQL");
 			} catch (Exception e) {
 				log.log(Level.SEVERE, "Exception while reading from "+propPath, e);
 			}
@@ -325,16 +336,17 @@ public class BlockProtectPlugin extends Plugin {
 					}
 				}
 				return true;
-			}
+			}/////below here has been updated to use BPio
 			if (split[0].equalsIgnoreCase("/listareas")) {
 				String ownerName = player.getName();
 				if (split.length == 2 && (player.isAdmin() || (listAdminGroup.length > 0 && player.isInGroup(listAdminGroup)) && etc.getServer().matchName(split[1]) != null)
 					ownerName = split[1];
-				//select owner, name from bp_area where owner = ownerName
-				//for each
-					//player.sendMessage(Colors.Rose +"");
-				//else
-					//player.sendMessage(Colors.Rose +"Player does not have any protected areas.");
+				ArrayList<BPArea> areas = io.getAll(ownerName);
+				for(BPArea a : areas) {
+					player.sendMessage(Colors.Rose+a.getName() + " " + a.getOwner());
+				}
+				if (areas.size() == 0)
+					player.sendMessage(Colors.Rose+"You have not protected any areas yet.");
 				return true;
 			}
 			if (split[0].equalsIgnoreCase("/giveownership")) {
@@ -351,11 +363,13 @@ public class BlockProtectPlugin extends Plugin {
 					}
 					if (split.length == 2 && (player.isAdmin() || (listAdminGroup.length > 0 && player.isInGroup(listAdminGroup)) && etc.getServer().matchName(split[3]) != null)
 						ownerName = split[3];
-					int id = getAreaId(areaName, ownerName);
+					int id = io.exists(areaName, ownerName);
 					if (id == -1) {
 						player.sendMessage(Colors.Rose+"Cannot find area.");
 					} else {
-						if (giveOwnership(id, newOwner)) {
+						BPArea area = io.get(id);
+						area.setOwner(newOwner);
+						if (io.save()) {
 							player.sendMessage(Colors.Rose+"Ownership transfered.");
 						} else {
 							player.sendMessage(Colors.Rose+"Error transfering ownership.");
@@ -371,12 +385,13 @@ public class BlockProtectPlugin extends Plugin {
 
 		public boolean onBlockCreate(Player player, Block blockPlaced, Block blockClicked, int itemInHand) {	
 			if (itemInHand==protectToolId && player.canUseCommand("/protect") && protecting.contains(player.getName())) {
-				BPTempArea t = protecting.get(player.getName());
-				if (t.lower == null) {
-					t.lower = new Point3d(blockClicked.getX(), blockClicked.getY(), blockClicked.getZ());
+				BPArea t = protecting.get(player.getName());
+				if (!t.isStarted()) {
+					t.setStart(blockClicked.getX(), blockClicked.getY(), blockClicked.getZ());
 					player.sendMessage(Colors.Rose+"First coordinate selected.");
 				} else {
-					if (protect(t.name, t.owner, t.x1, t.y1, t.z1, blockClicked.getX(), blockClicked.getY(), blockClicked.getZ()) {
+					t.setEnd(blockClicked.getX(), blockClicked.getY(), blockClicked.getZ());
+					if (io.protect(t)) {
 						player.sendMessage(Colors.Rose+"Area protected.");
 					} else {
 						player.sendMessage(Colors.Rose+"Error protecting area.");
@@ -385,11 +400,12 @@ public class BlockProtectPlugin extends Plugin {
 				}
 				return true;
 			} else if (itemInHand==detectToolId) {
-				//SELECT owner, name FROM bp_area INNER JOIN bp_protected on bp_area.id = bp_protected.bp_area_id ORDER BY priority DESC, area.id DESC
-				//for each row found
-					//player.sendMessage(Colors.Rose+"");
-				//else
-					//player.sendMessage(Colors.Rose+"There are not any protected areas here.");
+				ArrayList<BPArea> areas = io.getAll(blockClicked.getX(), blockClicked.getY(), blockClicked.getZ());
+				for(BPArea a : areas) {
+					player.sendMessage(Colors.Rose+a.getName() + " " + a.getOwner());
+				}
+				if (areas.size() == 0)
+					player.sendMessage(Colors.Rose+"There are not any protected areas here.");
 				return true;
 			} else if ( (itemInHand>267 && itemInHand<280) || itemInHand==256 || itemInHand==257 || itemInHand==258 || itemInHand==290 || itemInHand==291|| itemInHand==292|| itemInHand==293 || itemInHand==294 ) {
 				return false;

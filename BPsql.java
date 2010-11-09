@@ -1,5 +1,5 @@
 public class BPsql implements BPio {
-public boolean allowPlayer(String playerName);
+	public boolean allowPlayer(String playerName);
 		//on error return false
 		//insert into bp_player (bp_area_id, name) values (areaId, "playerName") ON DUPLICATE IGNORE;
 	public boolean disallowPlayer(String playerName);
@@ -17,14 +17,15 @@ public boolean allowPlayer(String playerName);
 		//insert into bp_area (owner, name, x1, x2, y1, y2, z1, z2) VALUES ("ownerName", "areaName", start.getX(), start.getY(), start.getZ(), end.getX(), end.getY(), end.getZ())
 		//insert the f'ing mother load of points that are protected into bp_protected (x,y,z,bp_area_id)
 	public boolean unprotect();
-	public static boolean delete(BPArea area);
-	public static int contains(String name, String owner);
+	public boolean delete(BPArea area);
+	public int contains(String name, String owner);
 		//int id = -1;
 		//select id from bp_area where name = "areaName" and owner = "ownerName" LIMIT 1
 		//if count > 0
 			//id = ^^
 		//return id;
-	public static BPArea getLeading(int x, int y, int z);
-	public static ArrayList<BPArea> getAll(int x, int y, int z);
-	public static ArrayList<BPArea> getAll(String owner);
+	public BPArea get(int id);
+	public BPArea getLeading(int x, int y, int z);
+	public ArrayList<BPArea> getAll(int x, int y, int z);
+	public ArrayList<BPArea> getAll(String owner);
 }

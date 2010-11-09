@@ -9,8 +9,8 @@ public class BPArea {
 		this.owner = owner;
 	}
 	
-	public boolean isComplete() {
-		return false;
+	public boolean isStarted() {
+		return b != null;
 	}
 	public boolean isOwner(String owner) {
 		return this.getOwner().equals(owner);
