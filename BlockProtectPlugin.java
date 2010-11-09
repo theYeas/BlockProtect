@@ -303,8 +303,11 @@ public class BlockProtectPlugin extends Plugin {
 				if (id == -1) {
 					player.sendMessage(Color.Rose + "Invalid area.");
 				} else if (id > -1) {
-					unprotect(id);
-					player.sendMessage(Colors.Rose + "Area unprotected.");
+					if (unprotect(id)) {
+						player.sendMessage(Colors.Rose + "Area unprotected.");
+					} else {
+						player.sendMessage(Colors.Rose + "Error unprotecting area.");
+					}
 				}
 				return true;
 			}
@@ -339,11 +342,17 @@ public class BlockProtectPlugin extends Plugin {
 				if (id == -1) {
 					player.sendMessage(Colors.Rose + "Invalid Area.");
 				} else if (id > -1 && group.length > 0) {
-					allowGroup(id, groupName);
-					player.sendMessage(Colors.Rose + "Group allowed.");
+					if (allowGroup(id, groupName)) {
+						player.sendMessage(Colors.Rose + "Group allowed.");
+					} else {
+						player.sendMessage(Colors.Rose + "Error allowing group.");
+					}
 				} else if (id > -1 && playerName.length > 0) {
-					allowPlayer(id, playerName);
-					player.sendMessage(Colors.Rose + "Player allowed.");
+					if (allowPlayer(id, playerName)) {
+						player.sendMessage(Colors.Rose + "Player allowed.");
+					} else {
+						player.sendMessage(Colors.Rose + "Error allowing player.");
+					}
 				}
 				return true;
 			}
@@ -377,11 +386,17 @@ public class BlockProtectPlugin extends Plugin {
 				if (id == -1) {
 					player.sendMessage(Colors.Rose + "Invalid Area.");
 				} else if (id > -1 && group.length > 0) {
-					unallowGroup(id, groupName);
-					player.sendMessage(Colors.Rose + "Group unallowed.");
+					if (unallowGroup(id, groupName)) {
+						player.sendMessage(Colors.Rose + "Group unallowed.");
+					} else {
+						player.sendMessage(Colors.Rose + "Error unallowing group.");
+					}
 				} else if (id > -1 && playerName.length > 0) {
-					unallowPlayer(id, playerName);
-					player.sendMessage(Colors.Rose + "Player unallowed.");
+					if (unallowPlayer(id, playerName)) {
+						player.sendMessage(Colors.Rose + "Player unallowed.");
+					} else {
+						player.sendMessage(Colors.Rose + "Error unallowing player.");
+					}
 				}
 				return true;
 			}
@@ -414,7 +429,11 @@ public class BlockProtectPlugin extends Plugin {
 					if (id == -1) {
 						player.sendMessage(Colors.Rose+"Cannot find area.");
 					} else {
-						giveOwnership(id, newOwner);
+						if (giveOwnership(id, newOwner)) {
+							player.sendMessage(Colors.Rose+"Ownership transfered.");
+						} else {
+							player.sendMessage(Colors.Rose+"Error transfering ownership.");
+						}
 					}
 				} else {
 					player.sendMessage(Colors.Rose+"Usage: /giveownership [areaName] [newOwnerName] <ownerName> - Gives ownership of area to a new owner. <ownerName> is for admin purposes.");
@@ -433,8 +452,11 @@ public class BlockProtectPlugin extends Plugin {
 					t.z1 = blockClicked.getZ();
 					player.sendMessage(Colors.Rose+"First coordinate selected.");
 				} else {
-					protect(t.name, t.owner, t.x1, t.y1, t.z1, blockClicked.getX(), blockClicked.getY(), blockClicked.getZ());
-					player.sendMessage(Colors.Rose+"Second coordinate selected, now protecting area.");
+					if (protect(t.name, t.owner, t.x1, t.y1, t.z1, blockClicked.getX(), blockClicked.getY(), blockClicked.getZ()) {
+						player.sendMessage(Colors.Rose+"Area protected.");
+					} else {
+						player.sendMessage(Colors.Rose+"Error protecting area.");
+					}
 					protecting.remove(player.getName());
 				}
 				return true;
