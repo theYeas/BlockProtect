@@ -117,7 +117,7 @@ public class BlockProtectPlugin extends Plugin {
 	
 	public boolean canProtectArea(BPArea area) {
 		boolean flag = true;
-		
+		//select highest rated intersecting areas that dont intersect with eachother...
 			//foreach area
 				//check if user is the owner
 					// !flag if ever false
@@ -199,11 +199,11 @@ public class BlockProtectPlugin extends Plugin {
 				int id = -1;
 				if (split.length == 2) {
 					String areaName = split[1];
-					id = getAreaId(areaName, playerName);
+					id = BPArea.contains(areaName, playerName);
 					if (id == -1) {
 						protecting.remove(playerName);
-						BPTempArea t = new BPTempArea(areaName, playerName);
-						protecting.put(playerName, t);
+						BPArea area = BPArea.get(id);
+						protecting.put(playerName, area);
 						player.sendMessage(Colors.Rose + "Choose coordinates by right clicking blocks with a "+toolName+".");
 					} else {
 						player.sendMessage(Colors.Rose + "Area name already exisits.");
@@ -220,7 +220,7 @@ public class BlockProtectPlugin extends Plugin {
 					String ownerName = player.getName();
 					if (split.length == 3 && (player.isAdmin() || (unprotectAdminGroup.length > 0 && player.isInGroup(unprotectAdminGroup))) && etc.getServer().matchPlayer(split[2]) != null)
 						ownerName = split[2];
-					id = getAreaId(areaName, ownerName);
+					id = BPArea.contains(areaName, playerName);
 				} else {
 					id = -2;
 					player.sendMessage(Colors.Rose + "Usage: /unprotect [areaName] <ownerName> - Unprotects an area. <ownerName> is for administrative use.");
@@ -228,7 +228,8 @@ public class BlockProtectPlugin extends Plugin {
 				if (id == -1) {
 					player.sendMessage(Color.Rose + "Invalid area.");
 				} else if (id > -1) {
-					if (unprotect(id)) {
+					BPArea temp;
+					if ((temp = BPArea.get(id)) && temp.unprotect() && BPArea.delete(temp)) {
 						player.sendMessage(Colors.Rose + "Area unprotected.");
 					} else {
 						player.sendMessage(Colors.Rose + "Error unprotecting area.");
@@ -260,7 +261,7 @@ public class BlockProtectPlugin extends Plugin {
 					}
 					if (split.length == 5 && (player.isAdmin() || (unprotectAdminGroup.length > 0 && player.isInGroup(unprotectAdminGroup)) && etc.getServer().matchName(split[4]) != null)
 						ownerName = split[4];
-					id = getAreaId(areaName, ownerName);
+					id = BPArea.exists(areaName, ownerName);
 				} else {
 					player.sendMessage(Colors.Rose + "Usage: /allow [areaName] -[p|g] [playerName|groupName] <ownerName> Allows a user or group to modify an area.");
 				}
