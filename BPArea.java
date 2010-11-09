@@ -1,35 +1,56 @@
-import javax.vecmath.Point3d;
-import javax.vecmath.BoundingBox;
-import java.util.ArrayList;
-
-public interface BPArea {
-	public boolean isOwner(String playerName);
-	public boolean isComplete();
-	public String getName();
-	public String getOwner();
-	public Point3d getStart();
-	public Point3d getEnd();
-	public int getPriority();
-	public void setOwner(String owner);
-	public void setPriority(int p);
-	public void setStart(int x, int y, int z);
-	public void setStart(Point3d start);
-	public void setEnd(int x, int y, int z);
-	public void setEnd(Point3d end);
-	public void save();
-	public void load(int id);
-	public void load(String name, String owner);
-	public boolean allowPlayer(String playerName);
-	public boolean disallowPlayer(String playerName);
-	public boolean allowGroup(String groupName);
-	public boolean disallowGroup(String groupName);
-	public boolean playerAllowed(String playerName);
-	public ArrayList<String> groupsAllowed(String playerName);
-	public boolean protect();
-	public boolean unprotect();
-	public static boolean delete(BPArea area);
-	public static int contains(String name, String owner);
-	public static BPArea getLeading(int x, int y, int z);
-	public static ArrayList<BPArea> getAll(int x, int y, int z);
-	public static ArrayList<BPArea> getAll(String owner);
+public class BPArea {
+	public String name = "";
+	public String owner = "";
+	public BoundingBox b = null;
+	public int priority = 0;
+	
+	public BPArea(String name, String owner) {
+		this.name = name;
+		this.owner = owner;
+	}
+	
+	public boolean isComplete() {
+		return false;
+	}
+	public boolean isOwner(String owner) {
+		return this.getOwner().equals(owner);
+	}
+	public boolean intersects(BPArea to) {
+		if (b != null && to.b != null)
+			return b.intersect(to.b);
+		return true;
+	}
+	public String getName() {
+		return this.name;
+	}
+	public String getOwner() {
+		return this.owner;
+	}
+	public Point3d getStart() {
+		return this.b.getLower();
+	}
+	public Point3d getEnd() {
+		return this.b.getUpper();
+	}
+	public int getPriority() {
+		return this.priority;
+	}
+	public void setOwner(String owner) {
+		this.owner = owner;
+	}
+	public void setPriority(int p) {
+		this.priority = p;
+	}
+	public void setStart(int x, int y, int z) {
+		setStart(new Point3d(x,y,z));
+	}
+	public void setStart(Point3d start) {
+		this.b.setLower(start);
+	}
+	public void setEnd(int x, int y, int z) {
+		setEnd(new Point3d(x,y,z));
+	}
+	public void setEnd(Point3d end) {
+		this.b.setUpper(end);
+	}
 }

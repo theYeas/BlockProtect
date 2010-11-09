@@ -23,7 +23,7 @@ public class BlockProtectPlugin extends Plugin {
 	public String sqlTablePrefix = "bp_";
 	private _srvpropsChecked = false;
 	private _configFolder = "";
-	public static Connection conn;
+	BPio io = null;
 	
 	priavte HashMap<String, BPArea> protecting = null;
 	
