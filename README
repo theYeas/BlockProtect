@@ -11,8 +11,8 @@ Plan:
 2. Write Plugin Code - FINISHED
 3. Write SQL Code (In Java) - PENDING
 4. Test test test
+4.5 Write HELP and Release
 5. Write File Code
-
 
 Ideas:
 File Based  - Abstract out the work so we can just swap in the proper object at init. F'D this up a bit. - WORKING ON THIS
@@ -20,3 +20,4 @@ File Based  - Abstract out the work so we can just swap in the proper object at 
 			- Possibly optimize it by making a "B+Tree<List>" to check which "chunk" we're in and find the applicable areas (chunks are 16x128x16 areas, y is up and down)
 Optimizing 	- Decrease resolution to 2x2x2 block. (Half the number of rows)
 			- Queue chunks of inserts (say 1000 at a time) and run those queries one per ???sec
+			
