@@ -10,6 +10,16 @@ public class BPArea {
 	private int priority = 0;
 	private permissionLevel level = permissionLevel.NONE;
 	
+	public BPArea(String name, String owner, permissionLevel level, int id, int x1, int y1, int z1, int x2, int y2, int z2) {
+		this.name = name;
+		this.owner = owner;
+		this.level = level;
+		this.id = id;
+		this.b = new BoundingBox();
+		this.b.setLower(new Point3d(x1,y1,z1));
+		this.b.setUpper(new Point3d(x2,y2,z2));
+	}
+	
 	public BPArea(String name, String owner, permissionLevel level) {
 		this.name = name;
 		this.owner = owner;
@@ -36,6 +46,9 @@ public class BPArea {
 		if (b != null && to.b != null)
 			return b.intersect(to.b);
 		return true;
+	}
+	public int getId() {
+		return this.id;
 	}
 	public String getName() {
 		return this.name;
