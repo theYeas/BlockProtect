@@ -1,18 +1,30 @@
 public class BPArea {
+	public enum permissionLevel {
+		NONE, ENTER, CREATE, DESTROY, CREATE_DESTROY, ADMINISTRATE
+		//NONE<ENTER<CREATE, DESTROY<CREATE_DESTROY<ADMINISTRATE
+	}
 	private int id = -1;
 	private String name = "";
 	private String owner = "";
 	private BoundingBox b = null;
 	private int priority = 0;
+	private permissionLevel level = permissionLevel.NONE;
 	
-	public BPArea(String name, String owner) {
+	public BPArea(String name, String owner, permissionLevel level) {
 		this.name = name;
 		this.owner = owner;
+		this.level = level;
 	}
 	public BPArea(String name, String owner, int id, int p, Point3d start, Point3d end) {
 		this.id = id;
 		this.p = p;
 		b = new BoundingBox(start,end);
+	}
+	public permissionLevel getLevel() {
+		return level;
+	}
+	public void setLevel(permissionLevel level) {
+		this.level = level;
 	}
 	public boolean isStarted() {
 		return b != null;

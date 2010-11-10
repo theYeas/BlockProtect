@@ -15,32 +15,33 @@ public class BlockProtectPlugin extends Plugin {
 	public String detectToolName = "Wooden Sword";
 	public int detectToolId = 169;
 	public String allowAdminGroup = "";
-	public String unallowAdminGroup = "";
 	public String listAdminGroup = "";
 	public String ownerAdminGroup = "";
 	public String unprotectAdminGroup = "";
 	public String ignoreAdminGroup = "";
+	public String detectGroup = "";
 	public String sqlTablePrefix = "bp_";
-	public String dataFolder = "/bp";
+	public String dataFolder = File.separator+"bp";
 	public boolean useSQL = true;
+	public int defaultPermissionLevel = BPArea.permissionLevels.NONE;
 	private _srvpropsChecked = false;
 	private _configFolder = "";
 	BPio io = null;
 	
-	priavte HashMap<String, BPArea> protecting = null;
+	priavte HashMap<String, BPArea> selecting = null;
 	
 	public void enable() {
 		log.info(name + " " + version + " Plugin Enabled.");
 		etc.getInstance().addCommand("/protect", " [areaName] - Allows an area to be marked and protected.");
-		etc.getInstance().addCommand("/allow", " [areaName] -[p|g] [playerName|groupName] - Allows a player or group to modify an area.");
-		etc.getInstance().addCommand("/disallow", " [areaName] -[p|g] [playerName|groupName] - Disallows a player or group to modify an area.");
+		etc.getInstance().addCommand("/allow", " [areaName] -[p|g] [playerName|groupName] [e/c/d/a] - Allows a player or group to modify an area. [e/c/d/a] Create Destroy Administrate");
+		etc.getInstance().addCommand("/listareas", " [e|c|d|b|a] (playerName) - Lists areas that meet given permission level. (optional) playerName for administrators.");
 	}
 
 	public void disable() {
 		log.info(name + " " + version + " Plugin Disabled.");
 		etc.getInstance().addCommand("/protect");
 		etc.getInstance().addCommand("/allow");
-		etc.getInstance().addCommand("/disallow");
+		etc.getInstance().addCommand("/listareas");
 	}
 
 	public void initialize() {
@@ -104,15 +105,15 @@ public class BlockProtectPlugin extends Plugin {
 		return canModify(p, b.getX(), b.getY(), b.getZ());
 	}
 	
-	public boolean canModify(Player p, int x, int y, int z) {
+	public boolean canModify(Player p, int x, int y, int z, BPArea.permissionLevel level) {
 		BPArea area = BPArea.getLeading(x,y,z);
 		if (area.isOwner(p.getName())) {
 			return true;
 		} else {
-			if (area.playerAllowed(p.getName())) {
+			if (io.playerAllowed(area, p.getName(), level) {
 				return true;
 			} else {
-				ArrayList<String> allowedGroups = area.groupsAllowed();
+				ArrayList<String> allowedGroups = io.groupsAllowed(area, level);
 				for(String s : allowedGroups) {
 					if (p.isInGroup(s))
 						return true;
@@ -142,17 +143,17 @@ public class BlockProtectPlugin extends Plugin {
 				//write defaults
 				props.getString("sqlTablePrefix", "bp_");
 				props.getString("dataFolder", "/bp");
+				props.setBoolean("useSQL", true);
 				props.setString("protectToolName", "Wooden Shovel");
 				props.setInt("protectToolId", 168);
 				props.setString("detectToolName", "Wooden Sword");
 				props.setInt("detectToolId", 169);
 				props.setString("allowAdminGroup", "");
-				props.setString("unallowAdminGroup", "");
 				props.setString("listAdminGroup", "");
 				props.setString("ownerAdminGroup", "");
 				props.setString("unprotectAdminGroup", "");
 				props.setString("ignoreAdminGroup", "");
-				props.setBoolean("useSQL", true);
+				props.setString("detectGroup", "");
 				props.save();
 			} catch (Exception e) {
 				log.log(Level.SEVERE, "Exception while writing to "+propPath, e);
@@ -167,17 +168,17 @@ public class BlockProtectPlugin extends Plugin {
 				props.load();
 				sqlTablePrefix = props.getString("sqlTablePrefix");
 				dataFolder = props.getString("dataFolder");
+				useSQL = props.getBoolean("useSQL");
 				protectToolName = props.getString("protectToolName");
 				protectToolId = props.getInt("protectToolId");
 				detectToolName = props.getString("detectToolName");
 				detectToolId = props.getInt("detectToolId");
 				allowAdminGroup = props.getString("allowAdminGroup");
-				unallowAdminGroup = props.getString("unallowAdminGroup");
 				listAdminGroup = props.getString("listAdminGroup");
 				ownerAdminGroup = props.getString("ownerAdminGroup");
 				unprotectAdminGroup = props.getString("unprotectAdminGroup");
 				ignoreAdminGroup = props.getString("ignoreAdminGroup");
-				useSQL = props.getBoolean("useSQL");
+				detectGroup = props.getString("detectGroup");
 			} catch (Exception e) {
 				log.log(Level.SEVERE, "Exception while reading from "+propPath, e);
 			}
@@ -194,13 +195,10 @@ public class BlockProtectPlugin extends Plugin {
 		}
 		
 		public boolean onCommand(Player player, String[] split) {
-			//commands: protect, unprotect, allow, disallow, listareas, giveownership
-		/*	"/protect", " [areaName] <ownerName> - Allows an area to be marked and protected.");
-			"/allow", " [areaName] -[p|g] [playerName|groupName] <ownerName> - Allows a player or group to modify an area.");
-			"/disallow", " [areaName] -[p|g] [playerName|groupName] <ownerName> - Disallows a player or group to modify an area.");
-			"/unprotect" , " [areaName] <ownerName> - optional ownerName if allowed to administrate. Unprotects area.
-			"/listareas" , " <ownerName> - optional ownerName if allowed to administrate. Lists areas for area owner, or current player.
-			"/giveownership" , " [areaName] [newOwnerName] <ownerName> - optional ownerName if allowed to administrate. Gives ownership of area to new owner.
+		/*	"/protect", " [areaName] [e|c|d|b] - Allows an area to be marked and protected.");
+			"/setpermission", " (creatorName) [areaName] -[p|g] [playerName|groupName] [n|e|c|d|b|a] - Allows a player or group to modify an area.");
+			"/unprotect" , " (creatorName) [areaName] - optional creatorName if allowed to administrate other player's area. Unprotects area.
+			"/listareas" , "- [e|c|d|b|a] (playerName) - Lists areas that meet given permission level. (optional) playerName for administrators.
 		*/
 			if (!player.canUseCommand(split[0])) {
 				return false;
@@ -248,13 +246,21 @@ public class BlockProtectPlugin extends Plugin {
 				}
 				return true;
 			}
-			if (split[0].equalsIgnoreCase("/allow")) {
-				//allow", " [areaName] -[p|g] [playerName|groupName] - Allows a player or group to modify an area."
+			if (split[0].equalsIgnoreCase("/setpermisson")) {
+				//"/setpermission", " (creatorName) [areaName] -[p|g] [playerName|groupName] [n|e|c|d|b|a] - Allows a player or group to modify an area.");
 				int id = -1;
 				String groupName = "";
 				String playerName = "";
 				if (split.length >= 4) { 
 					String ownerName = player.getName();
+					if (split.length == 5) {
+						if (etc.getServer().matchPlayer(split[1]) != null) {
+							ownerName = split[1];
+						} else {
+							player.sendMessage(Colors.Rose + "Invalid player name.");
+							return true;
+						}
+					}
 					String areaName = split[1];
 					if (split[2].equalsIgnoreCase("-g")) {
 						//verify group and get group_id
@@ -292,89 +298,40 @@ public class BlockProtectPlugin extends Plugin {
 					}
 				}
 				return true;
-			}/////below here has been updated to use BPio
-			if (split[0].equalsIgnoreCase("/unallow")) {
-				BPArea area;
-				String groupName = "";
-				String playerName = "";
-				if (split.length >= 4) { 
-					String ownerName = player.getName();
-					String areaName = split[1];
-					if (split[2].equalsIgnoreCase("-g")) {
-						if (true) {//verify group
-							groupName = split[3];
-						} else {
-							player.sendMessage(Colors.Rose + "Invalid Group.");
-						}
-					} else {
-						if (etc.getServer().matchPlayer(split[3]).length > 0) {
-							playerName = split[3];
-						} else {
-							player.sendMessage(Colors.Rose + "Invalid Player.");
-						}
-					}
-					if (split.length == 5 && (player.isAdmin() || (unprotectAdminGroup.length > 0 && player.isInGroup(unprotectAdminGroup)) && etc.getServer().matchName(split[4]) != null)
-						ownerName = split[4];
-					area = io.get(areaName, ownerName);
-				} else {
-					player.sendMessage(Colors.Rose + "Usage: /unallow [areaName] -[p|g] [playerName|groupName] <ownerName> Allows a user or group to modify an area.");
-				}
-				if (area == null) {
-					player.sendMessage(Colors.Rose + "Invalid Area.");
-				} else if (area != null && group.length > 0) {
-					if (io.unallowGroup(area, groupName)) {
-						player.sendMessage(Colors.Rose + "Group unallowed.");
-					} else {
-						player.sendMessage(Colors.Rose + "Error unallowing group.");
-					}
-				} else if (area != null && playerName.length > 0) {
-					if (io.unallowPlayer(area, playerName)) {
-						player.sendMessage(Colors.Rose + "Player unallowed.");
-					} else {
-						player.sendMessage(Colors.Rose + "Error unallowing player.");
-					}
-				}
-				return true;
 			}
 			if (split[0].equalsIgnoreCase("/listareas")) {
 				String ownerName = player.getName();
-				if (split.length == 2 && (player.isAdmin() || (listAdminGroup.length > 0 && player.isInGroup(listAdminGroup)) && etc.getServer().matchName(split[1]) != null)
-					ownerName = split[1];
-				ArrayList<BPArea> areas = io.getAll(ownerName);
-				for(BPArea a : areas) {
-					player.sendMessage(Colors.Rose+a.getName() + " " + a.getOwner());
-				}
-				if (areas.size() == 0)
-					player.sendMessage(Colors.Rose+"You have not protected any areas yet.");
-				return true;
-			}
-			if (split[0].equalsIgnoreCase("/giveownership")) {
-				//"/giveownership" , " [areaName] [newOwnerName] <ownerName> - optional ownerName if allowed to administrate. Gives ownership of area to new owner.
-				String ownerName = player.getName();
-				String areaName = "";
-				String newOwner = "";
-				if (split.length >= 3) {
-					areaName = split[1];
-					if (etc.getServer().matchName(split[2])) {
-						newOwner = split[2];
+				BPArea.permissionLevel level;
+				if (split.length >=2) {
+					if (split[1].equalsIgnoreCase("a")) {
+						level = BPArea.permissionLevel.ADMINISTRATE;
+					} else if (split[1].equalsIgnoreCase("b")) {
+						level = BPArea.permissionLevel.CREATE_DESTROY;
+					} else if (split[1].equalsIgnoreCase("c")) {
+						level = BPArea.permissionLevel.CREATE;
+					} else if (split[1].equalsIgnoreCase("d")) {
+						level = BPArea.permissionLevel.DESTROY;
+					} else if (split[1].equalsIgnoreCase("e")) {
+						level = BPArea.permissionLevel.ENTER;
 					} else {
-						player.sendMessage(Colors.Rose+"New owner cannot be found.");
+						player.sendMessage(Colors.Rose+"Invalid permission level chosen.");
+						return true;
 					}
-					if (split.length == 2 && (player.isAdmin() || (listAdminGroup.length > 0 && player.isInGroup(listAdminGroup)) && etc.getServer().matchName(split[3]) != null)
-						ownerName = split[3];
-					BPArea area = io.get(areaName, ownerName);
-					if (area == null) {
-						player.sendMessage(Colors.Rose+"Cannot find area.");
-					} else {
-						area.setOwner(newOwner);
-						if (io.save(area)) {
-							player.sendMessage(Colors.Rose+"Ownership transfered.");
+					if (split.length == 3 && (player.isAdmin() || (listAdminGroup.length > 0 && player.isInGroup(listAdminGroup))) {
+						if (etc.getServer().matchName(split[2]) != null) {
+							ownerName = split[2];
 						} else {
-							player.sendMessage(Colors.Rose+"Error transfering ownership.");
+							player.sendMessage(Colors.Rose+"Invalid player name.");
 						}
 					}
+					ArrayList<BPArea> areas = io.getAll(ownerName, level);
+					for(BPArea a : areas) {
+						player.sendMessage(Colors.Rose+a.getName() + " " + a.getOwner());
+					}
+					if (areas.size() == 0)
+						player.sendMessage(Colors.Rose+"You have not protected any areas yet.");
 				} else {
-					player.sendMessage(Colors.Rose+"Usage: /giveownership [areaName] [newOwnerName] <ownerName> - Gives ownership of area to a new owner. <ownerName> is for admin purposes.");
+					player.sendMessage(Colors.Rose+"Usage: /listareas - [e|c|d|b|a] (playerName) - Lists areas that meet given permission level. (optional) playerName for administrators.");
 				}
 				return true;
 			}
@@ -382,22 +339,26 @@ public class BlockProtectPlugin extends Plugin {
 		}
 
 		public boolean onBlockCreate(Player player, Block blockPlaced, Block blockClicked, int itemInHand) {	
-			if (itemInHand==protectToolId && player.canUseCommand("/protect") && protecting.contains(player.getName())) {
-				BPArea t = protecting.get(player.getName());
+			if (itemInHand==protectToolId && player.canUseCommand("/protect") && selecting.contains(player.getName())) {
+				BPArea t = selecting.get(player.getName());
 				if (!t.isStarted()) {
 					t.setStart(blockClicked.getX(), blockClicked.getY(), blockClicked.getZ());
 					player.sendMessage(Colors.Rose+"First coordinate selected.");
 				} else {
 					t.setEnd(blockClicked.getX(), blockClicked.getY(), blockClicked.getZ());
-					if (io.protect(t)) {
-						player.sendMessage(Colors.Rose+"Area protected.");
+					if (canProtectArea(t)) {
+						if (io.protect(t)) {
+							player.sendMessage(Colors.Rose+"Area protected.");
+						} else {
+							player.sendMessage(Colors.Rose+"Error protecting area.");
+						}
 					} else {
-						player.sendMessage(Colors.Rose+"Error protecting area.");
+						player.sendMessage(Colors.Rose+"Cannot protect this area, there is a conflicting protection already in place.");
 					}
-					protecting.remove(player.getName());
+					selecting.remove(player.getName());
 				}
 				return true;
-			} else if (itemInHand==detectToolId) {
+			} else if (itemInHand==detectToolId && (detectGroup.equals("") || player.isInGroup(detectGroup))) {
 				ArrayList<BPArea> areas = io.getAll(blockClicked.getX(), blockClicked.getY(), blockClicked.getZ());
 				for(BPArea a : areas) {
 					player.sendMessage(Colors.Rose+a.getName() + " - " + a.getOwner());
@@ -406,13 +367,14 @@ public class BlockProtectPlugin extends Plugin {
 					player.sendMessage(Colors.Rose+"There are not any protected areas here.");
 				return true;
 			} else if ( (itemInHand>267 && itemInHand<280) || itemInHand==256 || itemInHand==257 || itemInHand==258 || itemInHand==290 || itemInHand==291|| itemInHand==292|| itemInHand==293 || itemInHand==294 ) {
+				//don't handle tools (unless already handled)
 				return false;
 			}
-			return !(player.isInGroup(ignoreAdminGroup) || canModify(player.getName(), blockPlaced));
+			return !(player.isInGroup(ignoreAdminGroup) || canModify(player.getName(), blockPlaced, BPArea.permissionLevel.CREATE));
 		}
 		
 		public boolean onBlockDestroy(Player player, Block block) {
-			return !(player.isInGroup(ignoreAdminGroup) || canModify(player.getName(), block));
+			return !(player.isInGroup(ignoreAdminGroup) || canModify(player.getName(), block, BPArea.permissionLevel.DESTROY));
 		}
 	}
 }

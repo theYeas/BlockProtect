@@ -23,10 +23,12 @@ CREATE INDEX protected_areas ON bp_protected(bp_area_id);
 CREATE TABLE bp_group (
 	bp_area_id INTEGER NOT NULL,
 	group_name VARCHAR(20),
+	permission_level INTEGER NOT NULL,
 	CONSTRAINT pkey PRIVATE KEY (bp_area_id, group_name)
 );
 CREATE TABLE bp_player (
 	bp_area_id INTEGER NOT NULL,
 	player_name VARCHAR(20),
+	permission_level INTEGER NOT NULL,
 	CONSTRAINT pkey PRIVATE KEY (bp_area_id, player_name)
 );
