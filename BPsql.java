@@ -1,31 +1,70 @@
+/*
+	BPsql.java - mySQL implementation of BPio.java. Handles all
+		logic and optimizations.
+*/
+/*-
+	BlockProtect - A hMod plugin to allow protection of areas.
+	Copyright (C) 2010  Matthew Wiese
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 public class BPsql implements BPio {
-	public boolean allowPlayer(String playerName);
-		//on error return false
-		//insert into bp_player (bp_area_id, name) values (areaId, "playerName") ON DUPLICATE IGNORE;
-	public boolean disallowPlayer(String playerName);
-		//on error return false
-		//DROP FROM bp_player WHERE bp_area_id = areaId AND name = "playerName";
-	public boolean allowGroup(String groupName);
-		//on error return false
-		//insert into bp_group (bp_area_id, group_id) values (areaId, "playerName") ON DUPLICATE IGNORE;
-	public boolean disallowGroup(String groupName);
-		//on error return false
-		//DROP FROM bp_group WHERE bp_area_id = areaId AND name = "groupName";
-	public boolean playerAllowed(String playerName);
-	public ArrayList<String> groupsAllowed(String playerName);
-	public boolean protect();
-		//insert into bp_area (owner, name, x1, x2, y1, y2, z1, z2) VALUES ("ownerName", "areaName", start.getX(), start.getY(), start.getZ(), end.getX(), end.getY(), end.getZ())
-		//insert the f'ing mother load of points that are protected into bp_protected (x,y,z,bp_area_id)
-	public boolean unprotect();
-	public boolean delete(BPArea area);
-	public int contains(String name, String owner);
-		//int id = -1;
-		//select id from bp_area where name = "areaName" and owner = "ownerName" LIMIT 1
-		//if count > 0
-			//id = ^^
-		//return id;
-	public BPArea get(int id);
-	public BPArea getLeading(int x, int y, int z);
-	public ArrayList<BPArea> getAll(int x, int y, int z);
-	public ArrayList<BPArea> getAll(String owner);
+	public BPsql(String table_prefix) {
+	
+	}
+	public boolean allowPlayer(BPArea area, String playerName, BPArea.permissionLevel level) {
+	
+	}
+	public boolean allowGroup(BPArea area, String groupName, BPArea.permissionLevel level) {
+	
+	}
+	public boolean playerAllowed(BPArea area, String playerName, BPArea.permissionLevel level) {
+	
+	}
+	//checks to see if a player is at least permissionLevel level. 
+	public ArrayList<String> groupsAllowed(BPArea area, BPArea.permissionLevel minLevel) {
+	
+	}
+	public boolean protect(BPArea area) {
+	
+	}
+	public boolean unprotect(BPArea area) {
+	
+	}
+	public boolean delete(BPArea area) {
+	
+	}
+	public BPArea get(String name, String owner) {
+	
+	}
+	public BPArea get(int id) {
+	
+	}
+	public BPArea getLeading(int x, int y, int z) {
+	
+	}
+	public ArrayList<BPArea> getAll(int x, int y, int z) {
+	
+	}
+	public ArrayList<BPArea> getAll(String playerName, BPArea.permissionLevel minLevel) {
+	
+	}
+	public boolean isAdminInAllAreas(BPArea area) {
+	
+	}
+	public boolean validGroupname(String groupName) {
+	
+	}
 }
