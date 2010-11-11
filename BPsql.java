@@ -19,18 +19,103 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 public class BPsql implements BPio {
+	String table_prefix = "";
+	
 	public BPsql(String table_prefix) {
-	
+		this.table_prefix = table_prefix;
 	}
-	public boolean allowPlayer(BPArea area, String playerName, BPArea.permissionLevel level) {
-	
+	public boolean allowPlayer(BPArea area, Player p, BPArea.permissionLevel level) {
+		synchronized(areaUserLock) {
+			try {
+				Connection conn = getConn();
+				PreparedStatement st = conn.createPreparedStatement("INSERT INTO "+table_prefix+"area_user (area_id, user_id, level) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE level = VALUES(level)");
+				st.setInt(1, area.getId());
+				st.setInt(2, p.getSqlId());
+				st.setInt(3, level.ordinal());
+				st.executeUpdate();
+				st.close();
+				conn.close();
+			} catch (SQLException e) (
+				BlockProtectPlugin.log.log("allowPlayer() SQL Error", level.SEVERE, e);
+			} finally {
+				try {
+					if (st != null) {
+						st.close();
+					}
+					if (conn != null) {
+						conn.close();
+					}
+				} catch (SQLException ex) {}
+			}
+		}
 	}
-	public boolean allowGroup(BPArea area, String groupName, BPArea.permissionLevel level) {
-	
+	public boolean allowGroup(BPArea area, Group g, BPArea.permissionLevel level) {
+		synchronized(areaGroupLock) {
+			try {
+				Connection conn = getConn();
+				PreparedStatement st = conn.createPreparedStatement("INSERT INTO "+table_prefix+"area_group (area_id, group_id, level) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE level = VALUES(level)");
+				st.setInt(1, area.getId());
+				st.setInt(2, g.ID);
+				st.setInt(3, level.ordinal());
+				st.executeUpdate();
+				st.close();
+				conn.close();
+			} catch (SQLException e) (
+				BlockProtectPlugin.log.log("allowGroup() SQL Error", level.SEVERE, e);
+			} finally {
+				try {
+					if (st != null) {
+						st.close();
+					}
+					if (conn != null) {
+						conn.close();
+					}
+				} catch (SQLException ex) {}
+			}
+		}
 	}
-	public boolean playerAllowed(BPArea area, String playerName, BPArea.permissionLevel level) {
+	public boolean playerAllowed(BPArea area, Player p, BPArea.permissionLevel level) {
+		if (area.
+		synchronized(areaUserGroup) {
+			//hey0 never added a lock for users... this is just in case
+			//synchronized(DataSource.userLock) {
+				try {
+					Connection conn = getConn();
+					PreparedStatement st = conn.createPreparedStatement("SELCT user_id, group_id FROM ");
+					//select count(au.user_id), ag.group_id FROM area AS a 
+					//damn groups are stored as : group1,group2,group3 ... why~!!~~
+					st.setInt(1, area.getId());
+					st.setInt(2, level.ordinal());
+					st.setInt(3, p.getSqlId());
+					ResultSet rs = st.executeQuery();
+				} catch (SQLException e) (
+					BlockProtectPlugin.log.log("playerAllowed() SQL Error", level.SEVERE, e);
+				} finally {
+					try {
+						if (rs != null) {
+							rs.close();
+						}
+						if (st != null) {
+							st.close();
+						}
+						if (conn != null) {
+							conn.close();
+						}
+					} catch (SQLException ex) {}
+				}
+			}
+			//}
+		}
+	}
+	public abstract boolean playerAllowed(int x, int y, int z, Player p, BPArea.permissionLevel level) {
 	
 	}
 	//checks to see if a player is at least permissionLevel level. 
@@ -46,7 +131,7 @@ public class BPsql implements BPio {
 	public boolean delete(BPArea area) {
 	
 	}
-	public BPArea get(String name, String owner) {
+	public BPArea get(String name, Player p) {
 	
 	}
 	public BPArea get(int id) {
@@ -58,13 +143,13 @@ public class BPsql implements BPio {
 	public ArrayList<BPArea> getAll(int x, int y, int z) {
 	
 	}
-	public ArrayList<BPArea> getAll(String playerName, BPArea.permissionLevel minLevel) {
+	public ArrayList<BPArea> getAll(Player p, BPArea.permissionLevel minLevel) {
 	
 	}
 	public boolean isAdminInAllAreas(BPArea area) {
 	
 	}
-	public boolean validGroupname(String groupName) {
+	public Group getGroup(String groupName) {
 	
 	}
 }

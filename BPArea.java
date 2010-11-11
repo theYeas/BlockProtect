@@ -30,12 +30,12 @@ public class BPArea {
 	}
 	private int id = -1;
 	private String name = "";
-	private String owner = "";
+	private int owner = -1;
 	private BoundingBox b = null;
-	private int priority = 0;
+	//private int priority = 0; not in use yet
 	private permissionLevel level = permissionLevel.NONE;
 	
-	public BPArea(String name, String owner, permissionLevel level, int id, int x1, int y1, int z1, int x2, int y2, int z2) {
+	public BPArea(String name, int owner, permissionLevel level, int id, int x1, int y1, int z1, int x2, int y2, int z2) {
 		this.name = name;
 		this.owner = owner;
 		this.level = level;
@@ -45,14 +45,16 @@ public class BPArea {
 		this.b.setUpper(new Point3d(x2,y2,z2));
 	}
 	
-	public BPArea(String name, String owner, permissionLevel level) {
+	public BPArea(String name, int owner, permissionLevel level) {
 		this.name = name;
 		this.owner = owner;
 		this.level = level;
 	}
-	public BPArea(String name, String owner, int id, int p, Point3d start, Point3d end) {
+	public BPArea(String name, int owner, int id, permissionLevel level, Point3d start, Point3d end) {
 		this.id = id;
-		this.p = p;
+		this.level = level;
+		this.name = name;
+		this.owner = owner;
 		b = new BoundingBox(start,end);
 	}
 	public permissionLevel getLevel() {
@@ -64,8 +66,8 @@ public class BPArea {
 	public boolean isStarted() {
 		return b != null;
 	}
-	public boolean isOwner(String owner) {
-		return this.getOwner().equals(owner);
+	public boolean isOwner(Player p) {
+		return this.getOwner().equals(p.getSqlId());
 	}
 	public boolean intersects(BPArea to) {
 		if (b != null && to.b != null)

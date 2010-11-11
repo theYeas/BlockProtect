@@ -21,8 +21,8 @@
 
 CREATE TABLE bp_area (
 	id INTEGER NOT NULL AUTO_INCREMENT,
-	name Varchar(20),
-	owner Varchar(20),
+	name Varchar(32),
+	user_id INTEGER NOT NULL,
 	priority INTEGER NOT NULL DEFAULT 0,
 	x1 INTEGER NOT NULL DEFAULT 0,
 	x2 INTEGER NOT NULL DEFAULT 0,
@@ -37,19 +37,19 @@ CREATE TABLE bp_protected (
 	x INTEGER NOT NULL,
 	y INTEGER NOT NULL,
 	z INTEGER NOT NULL,
-	bp_area_id INTEGER NOT NULL,
-	CONSTRAINT pkey PRIMARY KEY(x,y,z,bp_area_id)
+	area_id INTEGER NOT NULL,
+	CONSTRAINT pkey PRIMARY KEY(x,y,z,area_id)
 );
-CREATE INDEX protected_areas ON bp_protected(bp_area_id);
-CREATE TABLE bp_group (
-	bp_area_id INTEGER NOT NULL,
-	group_name VARCHAR(20),
+CREATE INDEX protected_areas ON bp_protected(area_id);
+CREATE TABLE bp_area_group (
+	area_id INTEGER NOT NULL,
+	group_id INTEGER NOT NULL,
 	permission_level INTEGER NOT NULL,
-	CONSTRAINT pkey PRIVATE KEY (bp_area_id, group_name)
+	CONSTRAINT pkey PRIVATE KEY (area_id, group_name)
 );
-CREATE TABLE bp_player (
-	bp_area_id INTEGER NOT NULL,
-	player_name VARCHAR(20),
+CREATE TABLE bp_area_user (
+	area_id INTEGER NOT NULL,
+	user_id INTEGER NOT NULL,
 	permission_level INTEGER NOT NULL,
-	CONSTRAINT pkey PRIVATE KEY (bp_area_id, player_name)
+	CONSTRAINT pkey PRIVATE KEY (area_id, player_name)
 );

@@ -33,6 +33,9 @@ public class BPfile implements BPio {
 	public boolean playerAllowed(BPArea area, String playerName, BPArea.permissionLevel level) {
 	
 	}
+	public abstract boolean playerAllowed(int x, int y, int z, String playerName, BPArea.permissionLevel level) {
+	
+	}
 	//checks to see if a player is at least permissionLevel level. 
 	public ArrayList<String> groupsAllowed(BPArea area, BPArea.permissionLevel minLevel) {
 	
